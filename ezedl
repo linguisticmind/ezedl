@@ -1,0 +1,546 @@
+#!/usr/bin/env bash
+
+# ezedl - an mpv EDL preprocessor
+# copyright (c) 2024  Alex Rogers <https://github.com/linguisticmind>
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
+version=0.1.0
+
+function vim_esc { <<<"$1" sed -E 's/[ \t\n*?{`$\\%#'\''"|!<>+[]/\\&/g'; }
+
+getopt -T > /dev/null
+[[ $? != 4 ]] && { printf '[%s] %s\n' "${BASH_SOURCE##*/}" 'Enhanced getopt is required to run this script.' >&2; exit 1; }
+
+help='ezedl [<options>] [<file>]
+ezedl -e|--edit [<options>] [<file> ...]
+
+-e, --edit
+        Enable edit mode.
+
+-E, --no-edit
+        Disable edit mode.
+
+-k, --edit-keep-temporary (per-file)
+        Keep temporary files.
+
+-K, --edit-no-keep-temporary (per-file)
+        Do not keep temporary files.
+
+-f, --edit-save-file[={<path>[/]|<path>/<name>.[ez]edl|<name>.[ez]edl}] (per-file)
+
+        Save compiled files instead of creating temporary 
+        files.
+
+-F, --edit-no-save-file (per-file)
+        Do not save compiled files, but generate temporary 
+        files instead.
+
+-d, --edit-save-mkdir (per-file)
+        Create the save directory (the <path> value of 
+        --edit-save-file) if it does not exist.
+
+-D, --edit-save-no-mkdir (per-file)
+        Do not create the save directory (the <path> value 
+        of --edit-save-files-* options) if it does not 
+        exist.
+
+-y, --edit-save-overwrite (per-file)
+        Allow overwriting existing files when saving files.
+
+-Y, --edit-save-no-overwrite (per-file)
+        Do not allow overwriting existing files when saving 
+        files.
+
+-o, --edit-open-if-exists (per-file)
+        Skip compiling and open the target file in the 
+        editor if that file already exists.
+
+-O, --edit-no-open-if-exists (per-file)
+        Do not skip compiling if the target file already 
+        exists.
+
+-V, --editor=<value>
+        Choose an editor to use in -e, --edit mode.
+
+-v, --vim-layout=<value>
+        Choose an layout to use when using vim as an editor.
+
+-h, --vim-split-height=<value>
+        Adjust the height of the bottom pane when using the 
+        `split` value of -v, --vim-layout.
+
+-t, --convert-timestamps (per-file)
+        Convert timestamps from seconds to HH:MM:SS.s 
+        format.
+
+-T, --no-convert-timestamps (per-file)
+        Do not convert timestamps from seconds to 
+        HH:MM:SS.s format.
+
+-a, --convert-length-to-end (per-file)
+        Use `end` instead of `length` as an alternative way 
+        to indicate the end of the segment.
+
+-a, --no-convert-length-to-end (per-file)
+        Do not use `end` as an alternative way to indicate 
+        the end of the segment.
+
+-b, --include-empty-lines (per-file)
+        Preserve blank lines.
+
+-B, --no-include-empty-lines (per-file)
+        Do not preserve blank lines.
+
+-c, --include-comments (per-file)
+        Preserve comments.
+
+-C, --no-include-comments (per-file)
+        Do not preserve comments.
+
+--direction={auto|to|from} (per-file)
+        Set direction of compiling.
+
+--direction-auto-extension-no-header={warning|error|quiet} (per-file)
+
+        What to do when --direction is `auto`, and a file 
+        has an extension, but is missing a matching header.
+
+--direction-auto-header-no-extension={warning|error|quiet} (per-file)
+
+        What to do when --direction is `auto`, and a file 
+        has a header, but is missing a matching extension.
+
+--direction-auto-fallback={to|from} (per-file)
+        Fallback compiling direction for cases when 
+        autodetection of compiling direction fails.
+
+--direction-auto-no-header-no-extension={warning[,{to|from}]|error|quiet[,{to|from}]} (per-file)
+
+        What to do when --direction is `auto`, and a file 
+        has neither a recognized header, nor a recognized 
+        extension.
+
+--direction-manual-extension-no-header={warning|error|quiet} (per-file)
+
+        What to do when --direction is `to` or `from`, and 
+        a file has an extension, but is missing a matching 
+        header.
+
+--direction-manual-header-no-extension={warning|error|quiet} (per-file)
+
+        What to do when --direction is `to` or `from`, and 
+        a file has a header, but is missing a matching 
+        extension.
+
+--direction-manual-no-header-no-extension={warning|error|quiet} (per-file)
+
+        What to do when --direction is `to` or `from`, and 
+        a file has neither a recognized header, nor a 
+        recognized extension.
+
+--color
+        Colorize the output.
+
+--no-color
+        Disable colorization of the output.
+
+--help
+        Print help.
+
+--version
+        Print version information.
+'
+
+opts=$(getopt -n "${BASH_SOURCE##*/}" -o 'e,E,k,K,f::,F,d,D,y,Y,o,O,V:,v:,h:,t,T,a,A,b,B,c,C,' -l 'edit,no-edit,edit-keep-temporary,edit-no-keep-temporary,edit-save-file::,edit-no-save-file,edit-save-mkdir,edit-save-no-mkdir,edit-save-overwrite,edit-save-no-overwrite,edit-open-if-exists,edit-no-open-if-exists,editor:,vim-layout:,vim-split-height:,convert-timestamps,no-convert-timestamps,convert-length-to-end,no-convert-length-to-end,include-empty-lines,no-include-empty-lines,include-comments,no-include-comments,direction:,direction-auto-extension-no-header:,direction-auto-header-no-extension:,direction-auto-fallback:,direction-auto-no-header-no-extension:,direction-manual-extension-no-header:,direction-manual-header-no-extension:,direction-manual-no-header-no-extension:,color,no-color,help,version,' -- "$@")
+
+[[ $? != 0 ]] && exit 1
+
+eval set -- "$opts"
+
+opt_edit=
+opt_edit_keep_temporary=
+unset opt_edit_save_file
+opt_edit_save_mkdir=
+opt_edit_save_overwrite=
+opt_edit_open_if_exists=
+opt_editor='auto'
+opt_vim_layout='split'
+opt_vim_split_height=${LINES:+$((LINES / 3))}
+opt_convert_timestamps=1
+opt_convert_length_to_end=1
+opt_include_empty_lines=1
+opt_include_comments=1
+opt_direction='auto'
+opt_direction_auto_extension_no_header='error'
+opt_direction_auto_header_no_extension='warning'
+opt_direction_auto_fallback='to'
+opt_direction_auto_no_header_no_extension='error'
+opt_direction_manual_extension_no_header='warning'
+opt_direction_manual_header_no_extension='warning'
+opt_direction_manual_no_header_no_extension='warning'
+opt_color=1
+
+function editor_custom { nano "$@"; }
+
+test -f "${XDG_CONFIG_HOME:-$HOME/.config}"'/ezedl/config.bash' && source "$_"
+
+opts_edit_keep_temporary=()
+opts_pos_edit_save_file=0
+opts_edit_save_file=()
+opts_edit_save_mkdir=()
+opts_edit_save_overwrite=()
+opts_edit_open_if_exists=()
+opts_convert_timestamps=()
+opts_convert_length_to_end=()
+opts_include_empty_lines=()
+opts_include_comments=()
+opts_direction=()
+opts_direction_auto_extension_no_header=()
+opts_direction_auto_header_no_extension=()
+opts_direction_auto_fallback=()
+opts_direction_auto_no_header_no_extension=()
+opts_direction_manual_extension_no_header=()
+opts_direction_manual_header_no_extension=()
+opts_direction_manual_no_header_no_extension=()
+
+cache_dir="${XDG_CACHE_HOME:-$HOME/.cache}"'/ezedl'
+
+if [[ ! $EZEDL_LIB_DIR ]]; then
+  script_dir=$(dirname -- "$(realpath -- "$BASH_SOURCE")")
+  if [[ $? != 0 ]]; then
+    printf \
+      '[%s] %s\n' \
+      "${BASH_SOURCE##*/}" \
+      'Unable to determine ezedl'\''s location. Please set the EZEDL_LIB_DIR environment variable to manually point to a directory containing ezedl library files. This is normally a directory called '\''lib'\'' located in the same folder as the main script.' >&2
+    exit 1
+  fi
+fi
+
+lib_dir="${EZEDL_LIB_DIR:-$script_dir/lib}"
+
+while true; do
+  case $1 in
+    -e | --edit ) opt_edit=1; shift ;;
+    -E | --no-edit ) opt_edit=; shift ;;
+    -k | --edit-keep-temporary ) opt_edit_keep_temporary=1 opts_edit_keep_temporary+=(1) ; shift ;;
+    -K | --edit-no-keep-temporary ) opt_edit_keep_temporary= opts_edit_keep_temporary+=(''); shift ;;
+    -f | --edit-save-file ) opt_edit_save_file="$2"; opts_edit_save_file[$opts_pos_edit_save_file]="$2"; ((opts_pos_edit_save_file++)); shift 2 ;;
+    -F | --edit-no-save-file ) unset opt_edit_save_file 'opts_edit_save_file['"$opts_pos_edit_save_file"']'; ((opts_pos_edit_save_file++)); shift ;;
+    -d | --edit-save-mkdir ) opt_edit_save_mkdir=1 opts_edit_save_mkdir+=(1); shift ;;
+    -D | --edit-save-no-mkdir ) opt_edit_save_mkdir= opts_edit_save_mkdir+=(''); shift ;;
+    -y | --edit-save-overwrite ) opt_edit_save_overwrite=1 opts_edit_save_overwrite+=(1); shift ;;
+    -Y | --edit-save-no-overwrite ) opt_edit_save_overwrite= opts_edit_save_overwrite+=(''); shift ;;
+    -o | --edit-open-if-exists ) opt_edit_open_if_exists=1 opts_edit_open_if_exists+=(1); shift ;;
+    -O | --edit-no-open-if-exists ) opt_edit_open_if_exists= opts_edit_open_if_exists+=(''); shift ;;
+    -V | --editor ) opt_editor="$2"; shift 2 ;;
+    -v | --vim-layout ) opt_vim_layout="$2"; shift 2 ;;
+    -h | --vim-split-height ) opt_vim_split_height="$2"; shift 2 ;;
+    -t | --convert-timestamps ) opt_convert_timestamps=1 opts_convert_timestamps+=(1); shift ;;
+    -T | --no-convert-timestamps ) opt_convert_timestamps= opts_convert_timestamps+=(''); shift ;;
+    -a | --convert-length-to-end ) opt_convert_length_to_end=1 opts_convert_length_to_end+=(1); shift ;;
+    -A | --no-convert-length-to-end ) opt_convert_length_to_end= opts_convert_length_to_end+=(''); shift ;;
+    -b | --include-empty-lines ) opt_include_empty_lines=1 opts_include_empty_lines+=(1); shift ;;
+    -B | --no-include-empty-lines ) opt_include_empty_lines= opts_include_empty_lines+=(''); shift ;;
+    -c | --include-comments ) opt_include_comments=1 opts_include_comments+=(1); shift ;;
+    -C | --no-include-comments ) opt_include_comments= opts_include_comments+=(''); shift ;;
+    --direction ) opt_direction="$2" opts_direction+=("$2"); shift 2 ;;
+    --direction-auto-extension-no-header ) opt_direction_auto_extension_no_header="$2" opts_direction_auto_extension_no_header+=("$2"); shift 2 ;;
+    --direction-auto-header-no-extension ) opt_direction_auto_header_no_extension="$2" opts_direction_auto_header_no_extension+=("$2"); shift 2 ;;
+    --direction-auto-fallback ) opt_direction_auto_fallback="$2" opts_direction_auto_fallback+=("$2"); shift 2 ;;
+    --direction-auto-no-header-no-extension ) opt_direction_auto_no_header_no_extension="$2" opts_direction_auto_no_header_no_extension+=("$2"); shift 2 ;;
+    --direction-manual-extension-no-header ) opt_direction_manual_extension_no_header="$2" opts_direction_manual_extension_no_header+=("$2"); shift 2 ;;
+    --direction-manual-header-no-extension ) opt_direction_manual_header_no_extension="$2" opts_direction_manual_header_no_extension+=("$2"); shift 2 ;;
+    --direction-manual-no-header-no-extension ) opt_direction_manual_no_header_no_extension="$2" opts_direction_manual_no_header_no_extension+=("$2"); shift 2 ;;
+    --color ) opt_color=1; shift ;;
+    --no-color ) opt_color=; shift ;;
+    --help ) printf '%s\n' "$help"; exit ;;
+    --version ) printf '%s\n' "$version"; exit ;;
+    -- ) shift; break ;;
+    * ) printf '[%s] %s\n' "${BASH_SOURCE##*/}" 'Internal error: unable to parse option `'"$1"'`.' >&2; exit 1 ;;
+  esac
+done
+
+shopt -s extglob
+
+source "$lib_dir"'/per_file_opts_ops.bash'
+
+source "$lib_dir"'/direction_policy.bash'
+
+source "$lib_dir"'/opts_ops.bash'
+
+type -P 'lua5.4' > /dev/null && lua_bin='lua5.4' || lua_bin='lua'
+
+function convert_edl {
+
+  "$lua_bin" \
+    "$lib_dir"/ezedl.lua \
+    "$1" \
+    "$opt_direction" \
+    "$opt_convert_timestamps" \
+    "$opt_convert_length_to_end" \
+    "$opt_include_empty_lines" \
+    "$opt_include_comments"
+
+}
+
+header_edl='# mpv EDL v0'
+header_ezedl='# ezEDL v0' 
+
+messages=()
+had_errors=
+
+if [[ ! $opt_edit ]]; then
+
+  if [[ ! -f "$1" ]]; then
+
+    messages+=("$(
+      printf \
+        ${opt_color:+'\x1b[31m'}'[%s] %s'${opt_color:+'\x1b[39m'}'\n' \
+        "${BASH_SOURCE[$((${#BASH_SOURCE[@]} - 1))]##*/}" \
+        'File '\'"${1//\'/\'\\\'\'}"\'' does not exist or is not a file.' 
+    )")
+    had_errors=1
+
+  else
+
+    first_line=$(head -n 1 "$1")
+
+    apply_direction_policy "$1"
+
+    [[ ! $had_errors ]] && convert_edl "$1"
+
+  fi
+
+  [[ ${#messages[@]} -gt 0 ]] && printf '%s\n' "${messages[@]}" >&2
+  if [[ $had_errors ]]; then
+    exit 1
+  fi
+
+else
+
+  vim_script='
+    let first_window = win_getid()
+    set autoread
+
+    let buffers = filter(range(2, bufnr("$")), "bufexists(v:val)")
+  '
+  case $opt_vim_layout in
+    simple | tab )
+      vim_script+='
+        for buffer in buffers
+          execute("tab sbuffer " . buffer)
+        endfor
+      '
+    ;;
+    split )
+      vim_script+='
+        if len(buffers) > 1
+          set showtabline=2
+        endif
+        for buffer in buffers
+          if buffer % 2 == 1
+            execute("tab sbuffer " . buffer)
+          elseif buffer % 2 == 0
+            let top_window = win_getid()
+            '"$opt_vim_split_height"' split
+            execute("buffer " . buffer)
+            call win_gotoid(top_window)
+          endif
+        endfor
+      '
+    ;;
+  esac
+  vim_script+='
+    call win_gotoid(first_window)
+  '
+
+  dest_files=()
+  dest_src_files=()
+
+  create_cache_dir=
+  clear_cache=
+  
+  function clear_cache { (shopt -s dotglob; compgen -G "$cache_dir"'/*' > /dev/null && rm -r "$cache_dir"/*) }
+
+  for ((i=1; i<=$#; i++)); do
+
+    set_per_file_opt "$i" "${!i}"
+
+    if [[ ! -f "${!i}" ]]; then
+
+      messages+=("$(
+        printf \
+          ${opt_color:+'\x1b[31m'}'[%s] %s'${opt_color:+'\x1b[39m'}'\n' \
+          "${BASH_SOURCE[$((${#BASH_SOURCE[@]} - 1))]##*/}" \
+          'File '\'"${!i//\'/\'\\\'\'}"\'' does not exist or is not a file.' 
+      )")
+      had_errors=1
+
+    else
+
+      first_line=$(head -n 1 "${!i}")
+
+      apply_direction_policy "${!i}"
+
+      dest_basename="${!i##*/}"
+      dest_basename="${dest_basename%.*}"
+
+      dest_ext=
+      case $opt_direction in
+        to ) dest_ext='ezedl' ;;
+        from ) dest_ext='edl' ;;
+      esac
+
+      dest_filename="$dest_basename"'.'"$dest_ext"
+
+      if [[ ! ${opt_edit_save_file+_} && ! $opt_edit_open_if_exists ]]; then
+
+        [[ ! -d "$cache_dir" ]] && create_cache_dir=1
+        clear_cache=1
+        dest_file="$cache_dir"'/'"$(printf '%0'"${##}"'d' "$i")"'-'"$dest_filename"
+
+      else
+
+        if [[ ! -d "$save_path" ]]; then
+          if [[ $opt_edit_save_mkdir ]]; then
+            mkdir -p "$save_path"
+          else
+            messages+=("$(
+              printf \
+                ${opt_color:+'\x1b[31m'}'[%s] %s'${opt_color:+'\x1b[39m'}'\n' \
+                "${BASH_SOURCE[$((${#BASH_SOURCE[@]} - 1))]##*/}" \
+                'Save directory '\'"${save_path//\'/\'\\\'\'}"\'' does not exist. Make sure to pass a path to an existing directory, or set `-d, --edit-save-mkdir` to have a directory created automatically.' 
+            )")
+            had_errors=1
+          fi
+        fi
+
+        dest_file="$save_path"'/'"${save_name:-$dest_filename}"
+
+        if [[ -f "$dest_file" ]]; then
+          if [[ ! $opt_edit_open_if_exists ]]; then
+            if [[ ! $opt_edit_save_overwrite ]]; then
+              messages+=("$(
+                printf \
+                  ${opt_color:+'\x1b[31m'}'[%s] %s'${opt_color:+'\x1b[39m'}'\n' \
+                  "${BASH_SOURCE[$((${#BASH_SOURCE[@]} - 1))]##*/}" \
+                  'File '\'"${dest_file//\'/\'\\\'\'}"\'' already exists. Set `-y, --edit-save-overwrite` to overwrite or `-o, --edit-open-if-exists` to open the file.' 
+              )")
+              had_errors=1
+            else
+              rm "$dest_file"
+            fi
+          fi
+        fi
+
+      fi
+
+      src_file_vim_esc=$(vim_esc "${!i}")
+      dest_file_vim_esc=$(vim_esc "$dest_file")
+
+      vim_script_opt_direction=
+      vim_script_opt_convert_timestamps=
+      vim_script_opt_convert_length_to_end=
+      vim_script_opt_include_empty_lines=
+      vim_script_opt_include_comments=
+
+      case $opt_direction in
+        to ) vim_script_opt_direction='--direction=from' ;;
+        from ) vim_script_opt_direction='--direction=to' ;;
+      esac
+
+      if [[ $vim_script_opt_direction = '--direction=to' ]]; then
+
+        case $opt_convert_timestamps in
+          '' ) vim_script_opt_convert_timestamps='--no-convert-timestamps' ;;
+          1 ) vim_script_opt_convert_timestamps='--convert-timestamps' ;;
+        esac
+
+        case $opt_convert_length_to_end in
+          '' ) vim_script_opt_convert_length_to_end='--no-convert-length-to-end' ;;
+          1 ) vim_script_opt_convert_length_to_end='--convert-length-to-end' ;;
+        esac
+
+      fi
+
+      case $opt_include_empty_lines in
+        '' ) vim_script_opt_include_empty_lines='--no-include-empty-lines' ;;
+        1 ) vim_script_opt_include_empty_lines='--include-empty-lines' ;;
+      esac
+
+      case $opt_include_comments in
+        '' ) vim_script_opt_include_comments='--no-include-comments' ;;
+        1 ) vim_script_opt_include_comments='--include-comments' ;;
+      esac
+
+      vim_script_autocmd='autocmd BufWritePost '"$dest_file_vim_esc"' :silent !ezedl '
+      vim_script_autocmd+="$vim_script_opt_direction"' '
+      vim_script_autocmd+=${vim_script_opt_convert_timestamps:+"$vim_script_opt_convert_timestamps"' '}
+      vim_script_autocmd+=${vim_script_opt_convert_length_to_end:+"$vim_script_opt_convert_length_to_end"' '}
+      vim_script_autocmd+="$vim_script_opt_include_empty_lines"' '
+      vim_script_autocmd+="$vim_script_opt_include_comments"' '
+      vim_script_autocmd+="$dest_file_vim_esc"' > '"$src_file_vim_esc"
+
+      vim_script+=$'\n'"$vim_script_autocmd"$'\n'
+
+      dest_files+=("$dest_file")
+      dest_src_files+=("$dest_file" "${!i}")
+
+    fi
+
+  done
+ 
+  [[ ${#messages[@]} -gt 0 ]] && printf '%s\n' "${messages[@]}" >&2
+  if [[ $had_errors ]]; then
+    exit 1
+  fi
+
+  [[ $create_cache_dir ]] && mkdir -p "$cache_dir"
+
+  [[ $clear_cache ]] && clear_cache
+
+  for ((i=1; i<=$#; i++)); do
+
+    set_per_file_opt "$i" "${!i}"
+    apply_direction_policy "${!i}"
+
+    [[ ( ! ${opt_edit_save_file+_} && ! $opt_edit_open_if_exists ) || ! -f "$dest_file" ]] && (set -o noclobber; convert_edl "${!i}" > "${dest_files[$((i - 1))]}")
+
+  done
+
+  if [[ $opt_editor = ?(n)vim ]]; then
+    case $opt_vim_layout in
+      simple ) declare -n vim_args='dest_files' ;;
+      split | tab ) declare -n vim_args='dest_src_files' ;;
+    esac
+  fi
+
+  case $opt_editor in
+    vim ) vim --not-a-term -c "$vim_script" "${vim_args[@]}" ;;
+    nvim ) nvim -c "$vim_script" "${vim_args[@]}" ;;
+    custom ) editor_custom "$@" ;;
+  esac
+
+  for ((i=1; i<=$#; i++)); do
+
+    set_per_file_opt "$i" "${!i}"
+
+    if [[ ! ${opt_edit_save_file+_} && ! $opt_edit_open_if_exists && ! $opt_edit_keep_temporary ]]; then
+      rm "${dest_files[$((i - 1))]}"
+    fi
+
+  done
+
+fi

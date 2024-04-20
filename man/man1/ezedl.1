@@ -1,0 +1,322 @@
+.TH EZEDL 1 2024 EZEDL\ 0.1.0
+
+.SH NAME
+ezedl \- an mpv EDL preprocessor
+
+.SH SYNOPSIS
+.SY
+\fBezedl\fR [<options>] [<file>]
+
+\fBezedl\fR \fB-e|--edit\fR [<options>] [<file> ...]
+.YS
+
+.SH DESCRIPTION
+\fBezedl\fR allows the user to create and edit mpv EDL files with ease. It greatly simplifies and makes more convenient the process of working with mpv EDL files in a plain text editor.
+
+\fBezedl\fR uses an INI-like syntax to create mpv EDL elements such as segments and headers. Vim and Neovim integration is provided out of the box, allowing for easy editing, and on-the-fly compiling and previewing of mpv EDL files.
+
+The official mpv EDL format documentation can be found here: <https://github.com/mpv-player/mpv/blob/master/DOCS/edl-mpv.rst>.
+
+\fBezedl\fR requires \fBlua\fR (v5.4) to be installed and available on system's PATH.
+
+To use \fBezedl\fR's \fB-e, --edit\fR mode, a text editor is needed. Vim (\fBvim\fR) or Neovim (\fBnvim\fR) are strongly recommended since \fBezedl\fR offers functionality that is unique to working with those text editors, and that greatly facilitates the process of editing, compiling and previewing ezEDL files.
+
+.SH OPTIONS
+
+.SS Passing arguments to options
+
+Enhanced \fBgetopt\fR syntax applies when passing options. There is one important point to highlight when it comes to passing options with required vs optional arguments.
+
+In case of a short option, if an option takes a *required* argument, the argument may be written as a separate parameter, *or* directly after the option character. If an option takes an *optional* argument, however, the argument *must* be written directly after the option character.
+
+In case of a long option, if an option takes a *required* argument, the argument may be written as a separate parameter, *or* directly after the option name, separated by an equals sign (`=`). If an option takes an *optional* argument, however, the argument *must* be writtent directly after the option name, separated by an equals sign (`=`).
+
+.TS
+tab(|);
+l l l .
+|Short option|Long option
+Required argument|\fB-o\fR <value>|\fB--option\fR <value>
+|\fB-o\fR<value>|\fB--option\fR=<value>
+Optional argument|\fB-o\fR[<value>]|\fB--option\fR[=<value>]
+.TE
+
+Options that take optional arguments can be recognized in the options list below by their <value> and the preceding equals sign being enclosed in square brackets:
+
+.EX
+\fB-o, --option\fR[=<value>]
+.EE
+
+.SS Per-file options
+
+Options that can be set on per-file basis are marked as such: 
+
+.EX
+\fB-o, --option \fR(per-file)
+.EE
+
+These options can be set multiple times, each subsequent instance setting the value for the next <file> \- and all the <file>s that may follow it if this is the last instance of setting that option.
+
+For example:
+
+.EX
+ezedl --per-file-option=1 --per-file-option=2 file1.ext file2.ext file3.ext
+.EE
+
+This sets \fB--per-file-option\fR to `1` for `file1.ext`, and to `2` for `file2.ext` and `file3.ext`.
+
+.SS Edit mode
+
+.TP
+.B -e, --edit
+Enable edit mode.
+
+.TP
+.B -E, --no-edit
+Disable edit mode. This is the default.
+
+.TP
+.B -k, --edit-keep-temporary \fR(per-file)
+Keep temporary files.
+
+.TP
+.B -K, --edit-no-keep-temporary \fR(per-file)
+Do not keep temporary files. This is the default.
+
+The temporary files are deleted right after the editor closes.
+
+.TP
+.B -f, --edit-save-file\fR[={<path>[/]|<path>/<name>.[ez]edl|<name>.[ez]edl}] \fR(per-file)
+Save compiled files instead of creating temporary files. The default value is unset. When omitted, the value is ``.
+
+If <path> is not given, the EDL files are saved to the current working directory. If <name> is not given, the name of the source file with an appropriate change to the filename extension will be used.
+
+A `.edl` or `.ezedl`  extension after <name> is required because it serves to distinguish a directory called "<name>" from a name of an mpv EDL or an ezEDL file. To save to a directory whose name ends in `.edl` or `.ezedl` (without specifying <name>.[ez]edl), add a trailing forward slash (`/`) after <path>.
+
+.TP
+.B -F, --edit-no-save-file \fR(per-file)
+Do not save compiled files, but generate temporary files instead. This is the default.
+
+.TP
+.B -d, --edit-save-mkdir \fR(per-file)
+Create the save directory (the <path> value of \fB--edit-save-file\fR) if it does not exist.
+
+.TP
+.B -D, --edit-save-no-mkdir \fR(per-file)
+Do not create the save directory (the <path> value of \fB--edit-save-files-*\fR options) if it does not exist. This is the default.
+
+.TP
+.B -y, --edit-save-overwrite \fR(per-file)
+Allow overwriting existing files when saving files.
+
+.TP
+.B -Y, --edit-save-no-overwrite \fR(per-file)
+Do not allow overwriting existing files when saving files. This is the default.
+
+.TP
+.B -o, --edit-open-if-exists \fR(per-file)
+Skip compiling and open the target file in the editor if that file already exists.
+
+If this option is set, \fB-y, --edit-save-overwrite\fR / \fB -Y, --edit-save-no-overwrite\fR has no effect. 
+
+.TP
+.B -O, --edit-no-open-if-exists \fR(per-file)
+Do not skip compiling if the target file already exists. This is the default.
+
+Further behavior dependes on the value of \fB-y, --edit-save-overwrite\fR / \fB -Y, --edit-save-no-overwrite\fR. 
+
+.TP
+.B -V, --editor\fR=<value>
+Choose an editor to use in \fB-e, --edit\fR mode.
+
+<value> can be one of the following:
+
+.RS
+.TP
+auto (default)
+Automatically choose an editor based on the values of the \fIVISUAL\fR and \fIEDITOR\fR environment variables. 
+
+If one of said variables is set to a supported text editor (`vim` or `nvim`), then that editor will be used. Otherwise, the `editor_custom` function will be used.
+
+See `custom` below, and ENVIRONMENT for more information.
+.TP
+vim
+Use Vim as the text editor.
+.TP
+nvim
+Use Neovim as the text editor.
+.TP
+custom
+Use the `editor_custom` function to launch a custom text editor.
+
+The `editor_custom` function can be defined in the configuration file. The default `editor_custom` function is `function editor_custom { nano "$@"; }`.
+.RE
+
+.TP
+.B -v, --vim-layout\fR=<value>
+Choose an layout to use when using vim as an editor.
+
+<value> can be one of the following:
+
+.RS
+.TP
+simple
+Each generated file is opened in a separate tab.
+.TP
+split (default)
+Tabs are split into two panes, with the generated file at the top, and the original file at the bottom.
+.TP
+tab
+Each generated and original file is opened in a separate tab.
+.RE
+
+.TP
+.B -h, --vim-split-height\fR=<value>
+Adjust the height of the bottom pane when using the `split` value of \fB-v, --vim-layout\fR. <value> can be a positive integer or an empty string. The default <value> is one-third of the available screen height if the Bash variable \fILINES\fR is set, otherwise the default value is an empty string.
+
+.SS Compiling
+
+.TP
+.B -t, --convert-timestamps \fR(per-file)
+Convert timestamps from seconds to HH:MM:SS.s format. This is the default.
+
+This option only has effect when compiling from mpv EDL to ezEDL.
+
+.TP
+.B -T, --no-convert-timestamps \fR(per-file)
+Do not convert timestamps from seconds to HH:MM:SS.s format.
+
+This option only has effect when compiling from mpv EDL to ezEDL.
+
+.TP
+.B -a, --convert-length-to-end \fR(per-file)
+Use `end` instead of `length` as an alternative way to indicate the end of the segment. This is the default.
+
+This option only has effect when compiling from mpv EDL to ezEDL.
+
+.TP
+.B -a, --no-convert-length-to-end \fR(per-file)
+Do not use `end` as an alternative way to indicate the end of the segment. Use mpv EDL's original `length`.
+
+This option only has effect when compiling from mpv EDL to ezEDL.
+
+.TP
+.B -b, --include-empty-lines \fR(per-file)
+Preserve blank lines. This is the default.
+
+.TP
+.B -B, --no-include-empty-lines \fR(per-file)
+Do not preserve blank lines.
+
+.TP
+.B -c, --include-comments \fR(per-file)
+Preserve comments. This is the default.
+
+.TP
+.B -C, --no-include-comments \fR(per-file)
+Do not preserve comments.
+
+.SS Direction policy
+
+.TP
+.B --direction\fR={auto|to|from} \fR(per-file)
+Set direction of compiling. The default value is `auto`.
+
+`to` refers to compiling *to* ezEDL (mpv EDL -> ezEDL); `from`, to compiling *from* ezEDL (ezEDL -> mpv EDL).
+
+NB: Provided that the files passed to \fBezedl\fR have appropriate filename extensions and headers, there is no need to manually set \fB--direction\fR.
+
+.TS
+tab(|);
+l l l .
+|Extension|Header
+ezEDL|.ezedl|# ezEDL v0
+mpv EDL|.edl|# mpv EDL v0
+.TE
+
+In cases where filename extensions and/or headers are missing, or conflict with each other, the behavior is determined by the values set by the rest of the \fB--direction-*\fR options listed below.
+
+.TP
+.B --direction-auto-extension-no-header\fR={warning|error|quiet} \fR(per-file)
+What to do when \fB--direction\fR is `auto`, and a file has an extension, but is missing a matching header. The default value is `error`.
+
+.TP
+.B --direction-auto-header-no-extension\fR={warning|error|quiet} \fR(per-file)
+What to do when \fB--direction\fR is `auto`, and a file has a header, but is missing a matching extension. The default value is `warning`.
+
+.TP
+.B --direction-auto-fallback\fR={to|from} \fR(per-file)
+Fallback compiling direction for cases when autodetection of compiling direction fails. The default value is `to`.
+
+See \fB--direction-auto-no-header-no-extension\fR for more information.
+
+.TP
+.B --direction-auto-no-header-no-extension\fR={warning[,{to|from}]|error|quiet[,{to|from}]} \fR(per-file)
+What to do when \fB--direction\fR is `auto`, and a file has neither a recognized header, nor a recognized extension. The default value is `error`.
+
+Since both the extension and the header are missing, \fBezedl\fR has no way to automatically determine \fB--direction\fR, and thus the autodetection of compiling direction fails.
+
+When this option is set to `warning` or `quiet`, the secondary comma-delimited value can be passed (e.g. `warning,from`) that determines the fallback compiling direction. If this secondary value is not given, the value set by \fB--direction-auto-fallback\fR is used.
+
+.TP
+.B --direction-manual-extension-no-header\fR={warning|error|quiet} \fR(per-file)
+What to do when \fB--direction\fR is `to` or `from`, and a file has an extension, but is missing a matching header. The default value is `warning`.
+
+.TP
+.B --direction-manual-header-no-extension\fR={warning|error|quiet} \fR(per-file)
+What to do when \fB--direction\fR is `to` or `from`, and a file has a header, but is missing a matching extension. The default value is `warning`.
+
+.TP
+.B --direction-manual-no-header-no-extension\fR={warning|error|quiet} \fR(per-file)
+What to do when \fB--direction\fR is `to` or `from`, and a file has neither a recognized header, nor a recognized extension. The default value is `warning`.
+
+.SS Other
+
+.TP
+.B --color
+Colorize the output. This is the default.
+
+.TP
+.B --no-color
+Disable colorization of the output.
+
+.TP
+.B --help
+Print help.
+
+.TP
+.B --version
+Print version information.
+
+.SH ENVIRONMENT
+
+.SS EZEDL_LIB_DIR
+
+\fBezedl\fR is a program that consists of multiple files. All the files that \fBezedl\fR requires are stored in the \fIlib\fR directory located in the same folder as the main script.
+
+Normally, \fBezedl\fR should be able to determine its own locatiion, and thus the location of the \fIlib\fR folder. If for whatever reason \fBezedl\fR is unable to determine its own location, or the user wishes to store \fBezedl\fR library files elsewhere, the \fIEZEDL_LIB_DIR\fR enviroment variable can be set to manually point to a directory containing \fBezedl\fR library files.
+
+.SS VISUAL / EDITOR
+
+The values of \fIVISUAL\fR and \fIEDITOR\fR environment variables are respected when choosing the editor to use in \fB-e, --edit\fR mode if \fB-V, --editor\fR is set to `auto`.
+
+\fIVISUAL\fR is evaluated first. If not set, then \fIEDITOR\fR is evaluated. See \fB-V, --editor\fR for more information.
+
+.SH FILES
+
+A configuration file can be used to set default options.
+
+The configuration file's location is \fI$XDG_CONFIG_HOME/ezedl/config.bash\fR. If \fIXDG_CONFIG_HOME\fR is not set, it defaults to \fI~/.config\fR.
+
+.SH AUTHOR
+
+Alex Rogers <https://github.com/linguisticmind>
+
+.SH HOMEPAGE
+
+<https://github.com/linguisticmind/ezedl>
+
+.SH COPYRIGHT
+
+Copyright © 2023 Alex Rogers. License GPLv3+: GNU GPL version 3 or later <https://gnu.org/licenses/gpl.html>.
+
+This is free software: you are free to change and redistribute it. There is NO WARRANTY, to the extent permitted by law.
