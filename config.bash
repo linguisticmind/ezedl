@@ -21,4 +21,7 @@
 #opt_direction_manual_no_header_no_extension='warning'
 #opt_color=1
 
-#function editor_custom { nano "$@"; }
+#function editor_custom { nano "${dest_files[@]}"; }
+# "$@"                    source files
+# "${dest_files[@]}"      destination files
+# "${dest_src_files[@]}"  destination and source files

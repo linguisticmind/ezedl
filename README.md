@@ -6,6 +6,10 @@ ezedl uses an [INI](https://en.wikipedia.org/wiki/INI_file)-like syntax to creat
 
 The official mpv EDL format documentation can be found here: https://github.com/mpv-player/mpv/blob/master/DOCS/edl-mpv.rst
 
+Video tutorial:
+
+[![ezedl: edit mpv EDL files conveniently (an mpv EDL preprocessor)](https://img.youtube.com/vi/h5O1whOBDeE/0.jpg)](https://www.youtube.com/watch?v=h5O1whOBDeE)
+
 ## Changelog
 
 <table>
@@ -16,13 +20,16 @@ The official mpv EDL format documentation can be found here: https://github.com/
     </tr>
     <tr>
         <td>
-            <a href="https://github.com/linguisticmind/ezedl/releases/tag/v0.1.0">0.1.0</a></td>
+            <a href="https://github.com/linguisticmind/ezedl/releases/tag/v0.1.1">0.1.1</a></td>
         <td>
-            2024-04-20
+            2024-04-23
         </td>
         <td>
             <p>
-                Initial release.
+                Updated the <code>editor_custom</code> function to <code>function editor_custom { nano "${dest_files[@]}"; }</code>.
+            </p>
+            <p>
+                Fixed typos in the man page.
             </p>
         </td>
     </tr>
@@ -296,7 +303,7 @@ OPTIONS
 
                      The `editor_custom` function can be defined in  the  con‐
                      figuration  file. The default `editor_custom` function is
-                     `function editor_custom { nano "$@"; }`.
+                     `function editor_custom { nano "${dest_files[@]}"; }`.
 
        -v, --vim-layout=<value>
               Choose an layout to use when using vim as an editor.
@@ -340,7 +347,7 @@ OPTIONS
               This option only has effect  when  compiling  from  mpv  EDL  to
               ezEDL.
 
-       -a, --no-convert-length-to-end (per-file)
+       -A, --no-convert-length-to-end (per-file)
               Do  not  use  `end` as an alternative way to indicate the end of
               the segment. Use mpv EDL's original `length`.
 
@@ -479,7 +486,7 @@ COPYRIGHT
        This is free software: you are free  to  change  and  redistribute  it.
        There is NO WARRANTY, to the extent permitted by law.
 
-EZEDL 0.1.0                          2024                             EZEDL(1)
+EZEDL 0.1.1                          2024                             EZEDL(1)
 ```
 
 ## License

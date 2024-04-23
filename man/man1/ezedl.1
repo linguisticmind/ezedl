@@ -1,4 +1,4 @@
-.TH EZEDL 1 2024 EZEDL\ 0.1.0
+.TH EZEDL 1 2024 EZEDL\ 0.1.1
 
 .SH NAME
 ezedl \- an mpv EDL preprocessor
@@ -148,7 +148,7 @@ Use Neovim as the text editor.
 custom
 Use the `editor_custom` function to launch a custom text editor.
 
-The `editor_custom` function can be defined in the configuration file. The default `editor_custom` function is `function editor_custom { nano "$@"; }`.
+The `editor_custom` function can be defined in the configuration file. The default `editor_custom` function is `function editor_custom { nano "${dest_files[@]}"; }`.
 .RE
 
 .TP
@@ -194,7 +194,7 @@ Use `end` instead of `length` as an alternative way to indicate the end of the s
 This option only has effect when compiling from mpv EDL to ezEDL.
 
 .TP
-.B -a, --no-convert-length-to-end \fR(per-file)
+.B -A, --no-convert-length-to-end \fR(per-file)
 Do not use `end` as an alternative way to indicate the end of the segment. Use mpv EDL's original `length`.
 
 This option only has effect when compiling from mpv EDL to ezEDL.
