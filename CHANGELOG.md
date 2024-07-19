@@ -8,7 +8,8 @@
     </tr>
     <tr>
         <td>
-            <a href="https://github.com/linguisticmind/ezedl/releases/tag/v0.1.1">0.1.1</a></td>
+            <a href='https://github.com/linguisticmind/ezedl/releases/tag/v0.1.1'>0.1.1</a>
+        </td>
         <td>
             2024-04-23
         </td>
@@ -23,7 +24,8 @@
     </tr>
     <tr>
         <td>
-            <a href="https://github.com/linguisticmind/ezedl/releases/tag/v0.1.0">0.1.0</a></td>
+            <a href='https://github.com/linguisticmind/ezedl/releases/tag/v0.1.0'>0.1.0</a>
+        </td>
         <td>
             2024-04-20
         </td>

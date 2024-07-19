@@ -8,7 +8,7 @@ The official mpv EDL format documentation can be found here: https://github.com/
 
 Video tutorial:
 
-[![ezedl: edit mpv EDL files conveniently (an mpv EDL preprocessor)](https://img.youtube.com/vi/h5O1whOBDeE/0.jpg)](https://www.youtube.com/watch?v=h5O1whOBDeE)
+[![Mindful Technology - ezedl: edit mpv EDL files conveniently (an mpv EDL preprocessor)](https://img.youtube.com/vi/h5O1whOBDeE/0.jpg)](https://www.youtube.com/watch?v=h5O1whOBDeE)
 
 ## Changelog
 
@@ -20,7 +20,8 @@ Video tutorial:
     </tr>
     <tr>
         <td>
-            <a href="https://github.com/linguisticmind/ezedl/releases/tag/v0.1.1">0.1.1</a></td>
+            <a href='https://github.com/linguisticmind/ezedl/releases/tag/v0.1.1'>0.1.1</a>
+        </td>
         <td>
             2024-04-23
         </td>
