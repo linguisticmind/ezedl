@@ -10,6 +10,8 @@ Video tutorial:
 
 [![Mindful Technology - ezedl: edit mpv EDL files conveniently (an mpv EDL preprocessor)](https://img.youtube.com/vi/h5O1whOBDeE/0.jpg)](https://www.youtube.com/watch?v=h5O1whOBDeE)
 
+<a href='https://ko-fi.com/linguisticmind'><img src='https://github.com/linguisticmind/linguisticmind/raw/master/res/kofi/kofi_donate_1.svg' alt='Support me on Ko-fi' height='48'></a>
+
 ## Changelog
 
 <table>
