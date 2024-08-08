@@ -478,7 +478,7 @@ else
         from ) vim_script_opt_direction='--direction=to' ;;
       esac
 
-      if [[ $vim_script_opt_direction = '--direction=to' ]]; then
+      if [[ $vim_script_opt_direction == '--direction=to' ]]; then
 
         case $opt_convert_timestamps in
           '' ) vim_script_opt_convert_timestamps='--no-convert-timestamps' ;;
@@ -537,7 +537,7 @@ else
 
   done
 
-  if [[ $opt_editor = ?(n)vim ]]; then
+  if [[ $opt_editor == ?(n)vim ]]; then
     case $opt_vim_layout in
       simple ) declare -n vim_args='dest_files' ;;
       split | tab ) declare -n vim_args='dest_src_files' ;;
