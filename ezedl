@@ -18,10 +18,12 @@
 
 version=0.1.1
 
+script_name="${BASH_SOURCE##*/}"
+
 function vim_esc { <<<"$1" sed -E 's/[ \t\n*?{`$\\%#'\''"|!<>+[]/\\&/g'; }
 
 getopt -T > /dev/null
-[[ $? != 4 ]] && { printf '[%s] %s\n' "${BASH_SOURCE##*/}" 'Enhanced getopt is required to run this script.' >&2; exit 1; }
+[[ $? != 4 ]] && { printf '[%s] %s\n' "$script_name" 'Enhanced getopt is required to run this script.' >&2; exit 1; }
 
 help='ezedl [<options>] [<file>]
 ezedl -e|--edit [<options>] [<file> ...]
@@ -163,7 +165,7 @@ ezedl -e|--edit [<options>] [<file> ...]
         Print version information.
 '
 
-opts=$(getopt -n "${BASH_SOURCE##*/}" -o 'e,E,k,K,f::,F,d,D,y,Y,o,O,V:,v:,h:,t,T,a,A,b,B,c,C,' -l 'edit,no-edit,edit-keep-temporary,edit-no-keep-temporary,edit-save-file::,edit-no-save-file,edit-save-mkdir,edit-save-no-mkdir,edit-save-overwrite,edit-save-no-overwrite,edit-open-if-exists,edit-no-open-if-exists,editor:,vim-layout:,vim-split-height:,convert-timestamps,no-convert-timestamps,convert-length-to-end,no-convert-length-to-end,include-empty-lines,no-include-empty-lines,include-comments,no-include-comments,direction:,direction-auto-extension-no-header:,direction-auto-header-no-extension:,direction-auto-fallback:,direction-auto-no-header-no-extension:,direction-manual-extension-no-header:,direction-manual-header-no-extension:,direction-manual-no-header-no-extension:,color,no-color,help,version,' -- "$@")
+opts=$(getopt -n "$script_name" -o 'e,E,k,K,f::,F,d,D,y,Y,o,O,V:,v:,h:,t,T,a,A,b,B,c,C,' -l 'edit,no-edit,edit-keep-temporary,edit-no-keep-temporary,edit-save-file::,edit-no-save-file,edit-save-mkdir,edit-save-no-mkdir,edit-save-overwrite,edit-save-no-overwrite,edit-open-if-exists,edit-no-open-if-exists,editor:,vim-layout:,vim-split-height:,convert-timestamps,no-convert-timestamps,convert-length-to-end,no-convert-length-to-end,include-empty-lines,no-include-empty-lines,include-comments,no-include-comments,direction:,direction-auto-extension-no-header:,direction-auto-header-no-extension:,direction-auto-fallback:,direction-auto-no-header-no-extension:,direction-manual-extension-no-header:,direction-manual-header-no-extension:,direction-manual-no-header-no-extension:,color,no-color,help,version,' -- "$@")
 
 [[ $? != 0 ]] && exit 1
 
@@ -217,15 +219,20 @@ opts_direction_manual_no_header_no_extension=()
 
 cache_dir="${XDG_CACHE_HOME:-$HOME/.cache}"'/ezedl'
 
+declare -- script_source script_dir lib_dir
+
 if [[ ! $EZEDL_LIB_DIR ]]; then
-  script_dir=$(dirname -- "$(realpath -- "$BASH_SOURCE")")
+  script_source=$(realpath -- "$BASH_SOURCE") && script_dir=$(dirname -- "$script_source")
   if [[ $? != 0 ]]; then
     printf \
       '[%s] %s\n' \
-      "${BASH_SOURCE##*/}" \
+      "$script_name" \
       'Unable to determine ezedl'\''s location. Please set the EZEDL_LIB_DIR environment variable to manually point to a directory containing ezedl library files. This is normally a directory called '\''lib'\'' located in the same folder as the main script.' >&2
     exit 1
   fi
+else
+  script_source="$BASH_SOURCE"
+  script_dir=$(dirname -- "$script_source")
 fi
 
 lib_dir="${EZEDL_LIB_DIR:-$script_dir/lib}"
@@ -268,7 +275,7 @@ while true; do
     --help ) printf '%s\n' "$help"; exit ;;
     --version ) printf '%s\n' "$version"; exit ;;
     -- ) shift; break ;;
-    * ) printf '[%s] %s\n' "${BASH_SOURCE##*/}" 'Internal error: unable to parse option `'"$1"'`.' >&2; exit 1 ;;
+    * ) printf '[%s] %s\n' "$script_name" 'Internal error: unable to parse option `'"$1"'`.' >&2; exit 1 ;;
   esac
 done
 
@@ -303,13 +310,23 @@ had_errors=
 
 if [[ ! $opt_edit ]]; then
 
-  if [[ ! -f "$1" ]]; then
+  if [[ ! $1 ]]; then
 
     messages+=("$(
       printf \
         ${opt_color:+'\x1b[31m'}'[%s] %s'${opt_color:+'\x1b[39m'}'\n' \
         "${BASH_SOURCE[$((${#BASH_SOURCE[@]} - 1))]##*/}" \
-        'File '\'"${1//\'/\'\\\'\'}"\'' does not exist or is not a file.' 
+        'No input file specified.' 
+    )")
+    had_errors=1
+
+  elif [[ ! -f "$1" ]]; then
+
+    messages+=("$(
+      printf \
+        ${opt_color:+'\x1b[31m'}'[%s] %s'${opt_color:+'\x1b[39m'}'\n' \
+        "${BASH_SOURCE[$((${#BASH_SOURCE[@]} - 1))]##*/}" \
+        'File '"${1@Q}"' does not exist, or is not a file.' 
     )")
     had_errors=1
 
@@ -384,7 +401,7 @@ else
         printf \
           ${opt_color:+'\x1b[31m'}'[%s] %s'${opt_color:+'\x1b[39m'}'\n' \
           "${BASH_SOURCE[$((${#BASH_SOURCE[@]} - 1))]##*/}" \
-          'File '\'"${!i//\'/\'\\\'\'}"\'' does not exist or is not a file.' 
+          'File '"${!i@Q}"' does not exist or is not a file.' 
       )")
       had_errors=1
 
@@ -421,7 +438,7 @@ else
               printf \
                 ${opt_color:+'\x1b[31m'}'[%s] %s'${opt_color:+'\x1b[39m'}'\n' \
                 "${BASH_SOURCE[$((${#BASH_SOURCE[@]} - 1))]##*/}" \
-                'Save directory '\'"${save_path//\'/\'\\\'\'}"\'' does not exist. Make sure to pass a path to an existing directory, or set `-d, --edit-save-mkdir` to have a directory created automatically.' 
+                'Save directory '"${save_path@Q}"' does not exist. Make sure to pass a path to an existing directory, or set `-d, --edit-save-mkdir` to have a directory created automatically.' 
             )")
             had_errors=1
           fi
@@ -436,7 +453,7 @@ else
                 printf \
                   ${opt_color:+'\x1b[31m'}'[%s] %s'${opt_color:+'\x1b[39m'}'\n' \
                   "${BASH_SOURCE[$((${#BASH_SOURCE[@]} - 1))]##*/}" \
-                  'File '\'"${dest_file//\'/\'\\\'\'}"\'' already exists. Set `-y, --edit-save-overwrite` to overwrite or `-o, --edit-open-if-exists` to open the file.' 
+                  'File '"${dest_file@Q}"' already exists. Set `-y, --edit-save-overwrite` to overwrite or `-o, --edit-open-if-exists` to open the file.' 
               )")
               had_errors=1
             else
