@@ -508,7 +508,7 @@ else
       vim_script_autocmd+=${vim_script_opt_convert_length_to_end:+"$vim_script_opt_convert_length_to_end"' '}
       vim_script_autocmd+="$vim_script_opt_include_empty_lines"' '
       vim_script_autocmd+="$vim_script_opt_include_comments"' '
-      vim_script_autocmd+="$dest_file_vim_esc"' > '"$src_file_vim_esc"
+      vim_script_autocmd+="${dest_file@Q}"' > '"${!i@Q}"
 
       vim_script+=$'\n'"$vim_script_autocmd"$'\n'
 
