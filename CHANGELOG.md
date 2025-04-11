@@ -8,6 +8,34 @@
     </tr>
     <tr>
         <td>
+            <a href='https://github.com/linguisticmind/ezedl/releases/tag/v0.1.2'>0.1.2</a>
+        </td>
+        <td>
+            2025-04-11
+        </td>
+        <td>
+            <p>
+                Fixed a shell quoting issue that prevented <code>vim</code> from saving a file in <code>-e, --edit</code> mode when certain special characters were present in the path (e.g. parentheses (<code>()</code>).
+            </p>
+            <p>
+                Standardization fixes:
+                <ul>
+                    <li>
+                        Code:
+                        <ul>
+                            <li>Improved the method of quoting strings for displaying them in messages. All instances of using <code>\'"${parameter//\'/\'\\\'\'}"\'</code> were replaced with <code>"${parameter@Q}"</code>.</li>
+                            <li>Shifted to using a <code>script_name</code> variable set to <code>"${BASH_SOURCE##*/}"</code> to hold the name of the script shown in messages. Prior to this, <code>"${BASH_SOURCE##*/}"</code> was used directly everywhere.</li>
+                            <li>Shifted to using a more semantically clear <code>==</code> comparison operator instead of <code>=</code> in conditional statements. This ensures consistency with comparison operators in other programming languages, and in <a href='https://www.gnu.org/software/bash/manual/bash.html#Shell-Arithmetic'>Bash's own arithmetic expressions</a>.</li>
+                            <li>Updated the code for determining the main script's containing directory.</li>
+                        </ul>
+                    </li>
+                </ul>
+            </p>
+            <p>To improve clarity, a different, separate error message is now displayed when no input file is specified as opposed to when a file does not exist or is not a file.</p>
+        </td>
+    </tr>
+    <tr>
+        <td>
             <a href='https://github.com/linguisticmind/ezedl/releases/tag/v0.1.1'>0.1.1</a>
         </td>
         <td>
