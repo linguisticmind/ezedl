@@ -16,7 +16,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-version=0.1.1
+version=0.1.2
 
 script_name="${BASH_SOURCE##*/}"
 
@@ -170,6 +170,8 @@ opts=$(getopt -n "$script_name" -o 'e,E,k,K,f::,F,d,D,y,Y,o,O,V:,v:,h:,t,T,a,A,b
 [[ $? != 0 ]] && exit 1
 
 eval set -- "$opts"
+
+conf_dest_filename_dot='auto-if-exists'
 
 opt_edit=
 opt_edit_keep_temporary=
@@ -444,7 +446,23 @@ else
           fi
         fi
 
-        dest_file="$save_path"'/'"${save_name:-$dest_filename}"
+        dest_file_no_dot="$save_path"'/'"${save_name:-$dest_filename}"
+        dest_file_dot="$save_path"'/.'"${save_name:-$dest_filename}"
+
+        case $conf_dest_filename_dot in
+          always ) dest_file="$dest_file_dot";;
+          auto-if-exists | auto-prefer )
+            if [[ ! -f $dest_file_no_dot && -f $dest_file_dot ]]; then
+              dest_file="$dest_file_dot"
+            else
+              case $conf_dest_filename_dot in
+                auto-if-exists ) dest_file="$dest_file_no_dot" ;;
+                auto-prefer ) dest_file="$dest_file_dot" ;;
+              esac
+            fi
+          ;;
+          never ) dest_file="$dest_file_no_dot" ;;
+        esac
 
         if [[ -f "$dest_file" ]]; then
           if [[ ! $opt_edit_open_if_exists ]]; then
