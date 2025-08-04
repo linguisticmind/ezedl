@@ -525,7 +525,7 @@ else
         1 ) vim_script_opt_include_comments='--include-comments' ;;
       esac
 
-      vim_script_autocmd='autocmd BufWritePost '"$dest_file_vim_esc"' :silent !ezedl '
+      vim_script_autocmd='autocmd BufWritePost '"$dest_file_vim_esc"' :silent !ezedl -E '
       vim_script_autocmd+="$vim_script_opt_direction"' '
       vim_script_autocmd+=${vim_script_opt_convert_timestamps:+"$vim_script_opt_convert_timestamps"' '}
       vim_script_autocmd+=${vim_script_opt_convert_length_to_end:+"$vim_script_opt_convert_length_to_end"' '}
