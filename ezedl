@@ -172,6 +172,7 @@ opts=$(getopt -n "$script_name" -o 'e,E,k,K,f::,F,d,D,y,Y,o,O,V:,v:,h:,t,T,a,A,b
 eval set -- "$opts"
 
 conf_dest_filename_dot='auto-if-exists'
+conf_edit_new_auto_create=1
 
 opt_edit=
 opt_edit_keep_temporary=
@@ -396,6 +397,10 @@ else
   for ((i=1; i<=$#; i++)); do
 
     set_per_file_opt "$i" "${!i}"
+
+    if [[ ! -f ${!i} && $conf_edit_new_auto_create ]]; then
+      (set -o noclobber; printf '%s\n\n' "$header_edl" > "${!i}")
+    fi
 
     if [[ ! -f "${!i}" ]]; then
 
