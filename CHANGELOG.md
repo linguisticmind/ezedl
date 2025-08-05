@@ -8,6 +8,25 @@
     </tr>
     <tr>
         <td>
+            <a href='https://github.com/linguisticmind/ezedl/releases/tag/v0.1.3'>0.1.3</a>
+        </td>
+        <td>
+            2025-08-05
+        </td>
+        <td>
+            <p>
+                Added <code>conf_dest_filename_dot</code>.
+            </p>
+            <p>
+                Added <code>conf_edit_new_auto_create</code>.
+            </p>
+            <p>
+                Fixed compiling not working in edit mode when edit mode is enabled by default in the configuration file.
+            </p>
+        </td>
+    </tr>
+    <tr>
+        <td>
             <a href='https://github.com/linguisticmind/ezedl/releases/tag/v0.1.2'>0.1.2</a>
         </td>
         <td>
