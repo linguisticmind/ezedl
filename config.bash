@@ -1,3 +1,6 @@
+#conf_dest_filename_dot='auto-if-exists'
+#conf_edit_new_auto_create=1
+
 #opt_edit=
 #opt_edit_keep_temporary=
 #unset opt_edit_save_file
